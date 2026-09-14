@@ -43,15 +43,24 @@ Deliverable of the current phase: a complete definition of the project.
 
 To be defined one by one with Paul. Each module gets: purpose, data model, API surface, UI, rules/edge cases.
 
-| # | Module | Status |
-|---|--------|--------|
-| — | (to be listed by Paul) | not started |
+| # | Module | Document | Status |
+|---|--------|----------|--------|
+| — | Modèle conceptuel (événements, arborescence, choix, votes) | [CONCEPTS.md](CONCEPTS.md) | draft v0.1 |
+| — | Base de données | [DATABASE.md](DATABASE.md) | draft v0.4 |
+| — | Rôles et permissions | [ROLES.md](ROLES.md) | draft v0.1 |
+| — | Titres | [TITLES.md](TITLES.md) | squelette — contenu à définir par Paul |
+| — | Pages et navigation | [PAGES.md](PAGES.md) | page principale volontairement non définie |
+| — | Authentification | — | not started |
+| — | Modération | — | not started |
 
 ---
 
 ## 5. Database
 
-Paul has a defined database structure. To be transcribed here verbatim once walked through.
+Paul has a defined database structure. Transcription in progress in [DATABASE.md](DATABASE.md) (v0.4).
+
+Decisions already taken are listed in `DATABASE.md` §9. Open items are in §10 (🟡 to be
+settled) and §11 (🔴 left open on purpose).
 
 ---
 
