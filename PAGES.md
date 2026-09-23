@@ -1,5 +1,8 @@
 # predictotron — Pages et navigation
 
+> Point d'entrée du projet : [PROJECT.md](PROJECT.md). Décisions et points ouverts :
+> [DECISIONS.md](DECISIONS.md).
+
 Inventaire des pages du site. **Deux d'entre elles sont décrites, la principale est
 volontairement laissée ouverte** : Paul la définira, ce n'est pas à Claude de la proposer.
 
@@ -21,6 +24,23 @@ Ce qui est acquis à ce stade :
 
 Tout le reste — disposition, interactions, filtres, profondeur affichée, transitions entre
 vues — reste à définir.
+
+---
+
+## 1b. Méthode pour le design *(décidé)*
+
+**Paul a un plan précis pour le design. Il le donnera plus tard, dans une session dédiée.**
+
+En attendant : **on commence par une maquette la plus simple possible**, sans style.
+L'objectif est de rendre la structure visible, pas de proposer une apparence.
+
+Deux conséquences :
+
+- **Ne proposer aucune direction visuelle.** Couleurs, typographie, identité : ce n'est pas
+  le sujet de cette étape, et le plan existe déjà chez Paul.
+- **La maquette simple ne fixe rien.** Un choix de mise en page pris pour aller vite ne
+  devient pas une contrainte : quand le design arrivera, la structure devra pouvoir changer.
+  En cas de doute sur ce qui est provisoire, demander.
 
 ---
 
@@ -49,10 +69,11 @@ existantes.
 | Page | Rôle |
 |---|---|
 | Création d'un événement | Titre, description, univers, parent, tags, choix éventuel. |
-| Détail d'un événement | L'événement, ses trois scores, ses parents, ses enfants, ses tags, son choix. |
+| Détail d'un événement | L'événement, son score sur chaque axe actif, ses parents, ses enfants, ses tags, ses choix. |
 | Détail d'un choix | Les options en compétition et leur état. |
-| Inscription / connexion | Voir le module Authentification. |
-| Modération | File des signalements, des vérifications en attente, des événements contestés. |
+| Inscription / connexion | Voir [AUTH.md](AUTH.md). |
+| **Choix du pseudonyme** | Écran unique, partagé par l'inscription e-mail et la première connexion Google. Bloquant : un compte sans pseudonyme ne peut rien publier ([AUTH.md](AUTH.md) §3). |
+| Modération | Prédictions en attente de validation. 🟡 Signalements et contestations n'existent pas encore en base. |
 | Administration | Rôles, univers, axes, tags, titres. |
 
 ---

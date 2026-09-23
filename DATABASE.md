@@ -1,16 +1,20 @@
 # predictotron — Structure de la base de données
 
-**Statut : définition en cours (v0.4).** Aucune implémentation.
+**Statut : définition en cours (v1.0).** Aucune implémentation.
 
 Ce document décrit **uniquement le schéma**. Le sens des objets est dans
 [CONCEPTS.md](CONCEPTS.md), les droits dans [ROLES.md](ROLES.md), les titres dans
-[TITLES.md](TITLES.md), les écrans dans [PAGES.md](PAGES.md).
+[TITLES.md](TITLES.md), les écrans dans [PAGES.md](PAGES.md), les listes et la recherche
+dans [LISTS.md](LISTS.md), l'authentification dans [AUTH.md](AUTH.md).
+
+La liste complète des décisions et des points ouverts, tous modules confondus, est dans
+[DECISIONS.md](DECISIONS.md). Le point d'entrée du projet est [PROJECT.md](PROJECT.md).
 
 Notation : 🟡 = choix proposé, à valider par Paul. 🔴 = laissé ouvert, à définir par Paul.
 
 Conventions :
 
-- Clé primaire `id` sur chaque table. 🟡 Entier auto-incrémenté ou UUID — à trancher.
+- Clé primaire `id` sur chaque table : **entier auto-incrémenté** *(décidé)*.
 - Horodatages UTC (`TIMESTAMP`).
 - **Suppressions logiques uniquement** (`deleted_at NULL` = vivant) : une suppression
   physique casserait l'arborescence.
@@ -20,35 +24,41 @@ Conventions :
 
 ## 1. Utilisateurs
 
-### `users`
+> **Les tables d'authentification ne sont pas définies ici.** Utilisateur, identités de
+> connexion, sessions et jetons de vérification sont **créés et migrés par la bibliothèque
+> d'authentification** ([AUTH.md](AUTH.md)). Les redéfinir à la main reviendrait à reprendre
+> le travail qu'on lui délègue, et à devoir les tenir synchronisées à chaque montée de
+> version.
 
-| Colonne | Type | Notes |
+### Champs additionnels du modèle utilisateur
+
+Ce que le produit ajoute au modèle utilisateur fourni, dans la même table :
+
+| Champ | Type | Notes |
 |---|---|---|
-| `id` | PK | |
-| `username` | TEXT UNIQUE NOT NULL | unique, casse-insensible 🟡 |
-| `email` | TEXT UNIQUE NOT NULL | |
-| `email_verified_at` | TIMESTAMP NULL | NULL = compte non confirmé |
-| `password_hash` | TEXT NULL | NULL si connexion uniquement via OAuth |
 | `role` | SMALLINT NOT NULL DEFAULT 1 | 1/2/3/4, cf. [ROLES.md](ROLES.md) |
-| `created_at` | TIMESTAMP NOT NULL | date de création du compte |
-| `updated_at` | TIMESTAMP NOT NULL | |
-| `last_login_at` | TIMESTAMP NULL | |
-| `avatar_url` | TEXT NULL | 🟡 |
-| `bio` | TEXT NULL | 🟡 |
 | `display_title_id` | FK → `titles.id` NULL | titre affiché à côté du nom |
+| `bio` | TEXT NULL | 🟡 |
+| `avatar_url` | TEXT NULL | 🟡 |
 | `status` | TEXT NOT NULL DEFAULT 'active' | `active` / `suspended` / `banned` |
-| `deleted_at` | TIMESTAMP NULL | |
+| `deleted_at` | TIMESTAMP NULL | suppression logique |
 
-Index : `username`, `email`, `role`.
+Index à ajouter : `role`, `status`.
 
-Le mot de passe n'est jamais stocké en clair (Argon2id ou bcrypt — relève du module
-Authentification).
+Identifiant, e-mail, date de création et confirmation d'adresse viennent du modèle de base.
 
-### `user_sessions`
+**Pseudonyme public** *(décidé)* : chaque compte porte un pseudonyme unique, distinct de
+l'adresse e-mail, qui n'est jamais affichée. Deux valeurs sont stockées :
 
-🟡 Dépend du module Authentification, forme prévisible :
-`id`, `user_id`, `token_hash` (jamais le token en clair), `created_at`, `expires_at`,
-`revoked_at`, `user_agent`, `ip_hash`.
+- la forme **telle qu'écrite**, avec ses accents — c'est elle qui s'affiche ;
+- la **clé d'unicité** : minuscules, accents retirés, ponctuation retirée. C'est elle qui
+  porte la contrainte `UNIQUE`.
+
+Donc `Amélie` s'affiche accentué, et `Amelie` est refusé ensuite. Règle complète et cas
+limites dans [AUTH.md](AUTH.md) §3.
+
+Le reste du schéma référence l'utilisateur par sa clé, et ne dépend donc pas de la manière
+dont il se connecte.
 
 ---
 
@@ -90,12 +100,13 @@ Authentification).
 | `description` | TEXT NULL | contexte, critères de réalisation |
 | `created_at` | TIMESTAMP NOT NULL | |
 | `updated_at` | TIMESTAMP NOT NULL | |
+| `target_date` | DATE NULL | échéance annoncée par l'auteur (§3.4) |
 | **`is_realized`** | **BOOLEAN NULL** | **l'événement s'est-il réalisé ?** |
 | **`validated_by`** | **FK → `users.id` NULL** | **le compte qui a validé** |
-| `score_probability` | INTEGER NOT NULL DEFAULT 0 | cache, cf. §5 |
-| `score_interest` | INTEGER NOT NULL DEFAULT 0 | cache |
-| `score_fun` | INTEGER NOT NULL DEFAULT 0 | cache |
 | `deleted_at` | TIMESTAMP NULL | |
+
+Les scores ne sont **pas** des colonnes de `predictions` : voir `prediction_axis_scores`
+en §5, et l'explication ci-dessous.
 
 Index :
 
@@ -104,7 +115,16 @@ idx_predictions_parent            (parent_id)
 idx_predictions_universe_parent   (universe_id, parent_id)
 idx_predictions_author            (author_id)
 idx_predictions_realized          (is_realized)
+idx_predictions_target_date       (target_date)   -- échéances dépassées
+idx_predictions_parent_created    (parent_id, created_at DESC)
 ```
+
+> ⚠️ **Correction par rapport aux versions précédentes.** Les colonnes
+> `score_probability` / `score_interest` / `score_fun` sont supprimées. Elles nommaient
+> trois axes en dur, ce qui contredit deux exigences : les axes sont redéfinissables
+> ([CONCEPTS.md](CONCEPTS.md) §7), et les listes doivent pouvoir se trier par n'importe quel
+> axe ([LISTS.md](LISTS.md)). Ajouter un axe aurait demandé une migration et une nouvelle
+> colonne. Le cache est donc une table, `prediction_axis_scores` (§5).
 
 **Les enfants ne sont jamais stockés** : `SELECT … WHERE parent_id = ?`. C'est la raison
 d'être de `idx_predictions_parent`.
@@ -179,6 +199,22 @@ plus tard si les performances l'exigent — §10.)*
 
 Conséquence structurelle : **quand un événement se réalise, ses enfants continuent de
 pointer dessus.** Rien n'est déplacé. Voir [CONCEPTS.md](CONCEPTS.md) §4.
+
+### 3.4 `target_date` — ce qui déclenche un « non réalisé »
+
+Sans échéance, aucun mécanisme ne fait jamais passer un événement à
+`is_realized = FALSE` : une prédiction qui n'arrive simplement pas reste `NULL`
+indéfiniment. Conséquences en chaîne : `user_stats.predictions_failed` et
+`incorrect_probability_votes` ne s'incrémentent jamais, donc les titres liés aux erreurs
+n'existent pas, et le verrou des votes de l'axe probabilité ne se déclenche jamais.
+
+`target_date` est renseignée par l'auteur, facultative. Une requête périodique liste les
+événements dont `target_date` est dépassée et qui sont encore `NULL` : c'est la file de
+travail des vérificateurs. **Le passage à `FALSE` reste une action humaine** — le
+dépassement de délai signale, il ne tranche pas.
+
+> 🟡 Un événement sans `target_date` n'apparaît jamais dans cette file. Faut-il rendre
+> l'échéance obligatoire, ou accepter des événements sans horizon ?
 
 ---
 
@@ -285,11 +321,30 @@ PK composite `(user_id, prediction_id, axis_id)`.
 Index : `(prediction_id, axis_id)` pour les totaux, `(user_id, created_at)` pour la page
 d'activité.
 
-### Compteurs dénormalisés
+### `prediction_axis_scores` — le cache des totaux
 
-`predictions.score_probability / score_interest / score_fun` = somme des `value` de l'axe
-correspondant, recalculée à chaque vote. Permet de trier et d'afficher sans agréger.
-`prediction_votes` reste la source de vérité ; les scores sont reconstructibles.
+Une ligne par (prédiction, axe). Remplace les trois anciennes colonnes de `predictions`.
+
+| Colonne | Type | Notes |
+|---|---|---|
+| `prediction_id` | FK → `predictions.id` | |
+| `axis_id` | FK → `vote_axes.id` | |
+| `score` | INTEGER NOT NULL DEFAULT 0 | somme des `value` : positifs moins négatifs |
+| `vote_count` | INTEGER NOT NULL DEFAULT 0 | **nombre** de votes, positifs et négatifs confondus |
+| `updated_at` | TIMESTAMP | |
+
+PK composite `(prediction_id, axis_id)`.
+
+Index : `(axis_id, score DESC)` et `(axis_id, vote_count DESC)` — ce sont eux qui rendent le
+tri par axe possible sans agréger `prediction_votes` à chaque requête.
+
+`score` et `vote_count` sont deux informations distinctes, et les deux servent au tri :
+un événement à +2 sur 2 votes et un événement à +2 sur 400 votes ont le même score et pas
+du tout la même valeur. Voir [LISTS.md](LISTS.md).
+
+`prediction_votes` reste la source de vérité ; cette table est entièrement reconstructible.
+
+Ajouter un axe = insérer une ligne dans `vote_axes`. Aucune migration, aucune colonne.
 
 ---
 
@@ -399,6 +454,17 @@ users           1──1  user_stats
 | 4 | Les votes de l'axe **probabilité sont verrouillés** à la résolution | §5 |
 | 5 | Statut d'une prédiction = **deux champs seulement** : `is_realized` (booléen) + `validated_by` (id du compte). Rien d'autre pour l'instant | §3.1 |
 | 6 | Quand un événement se réalise, **ses enfants continuent de pointer dessus** ; le niveau 1 est déduit, pas déplacé | §3.3 |
+| 7 | Clés primaires : **entiers auto-incrémentés** | Conventions |
+| 8 | `target_date` (échéance annoncée) **réintroduite** : c'est ce qui alimente la file des « non réalisés » | §3.4 |
+| 9 | Déduplication : suggestion de posts similaires à la création + parents alternatifs. **La fusion est hors V1** | [DEDUPLICATION.md](DEDUPLICATION.md) |
+| 10 | Authentification V1 : **mot de passe ET Google OAuth**, cohabitant sur le même compte | [AUTH.md](AUTH.md) |
+| 10b | **L'authentification n'est pas écrite à la main** : bibliothèque éprouvée (Better Auth proposé), qui possède ses tables | [AUTH.md](AUTH.md) |
+| 10c | **Pseudonyme public unique**, distinct de l'e-mail. Affiché avec ses accents, unique sur une clé sans accents ni ponctuation | §1, [AUTH.md](AUTH.md) |
+| 10d | **Un seul écran de choix du pseudonyme**, partagé par les deux parcours de connexion | [AUTH.md](AUTH.md) §3 |
+| 11 | Les champs propres au produit (`role`, `status`…) sont des **champs additionnels** du modèle utilisateur, pas une table parallèle | §1 |
+| 12 | Les scores ne sont plus trois colonnes mais la table `prediction_axis_scores`, pour que les axes restent redéfinissables et triables | §5 |
+| 13 | Un **composant de liste unifié** sert tous les affichages de posts, avec critère de tri paramétré | [LISTS.md](LISTS.md) |
+| 14 | Recherche plein texte via **FTS5**, disponible sur D1 (vérifié) | [LISTS.md](LISTS.md) §5 |
 
 ## 10. À trancher (🟡)
 
@@ -413,23 +479,32 @@ se confirme :
 2. **Date de validation** — on sait *qui* a validé, pas *quand*.
 3. **Date réelle de l'événement** (`occurred_at`), distincte de la date de validation.
 4. **Source / preuve** fournie par le vérificateur.
-5. **Échéance annoncée** (`target_date`) : sans elle, rien ne déclenche jamais un
-   « ne se réalisera pas » par dépassement de délai.
+5. ~~**Échéance annoncée** (`target_date`)~~ → **réintroduite**, voir §3.4.
 6. **Historique des vérifications** — avec un seul champ `validated_by`, revenir sur une
    validation efface l'identité du précédent valideur, sans trace.
 7. **Historique des éditions** — sans lui, une édition de modérateur n'est pas contestable
    ([ROLES.md](ROLES.md)).
 
+### Hors V1, à construire plus tard
+
+- **Fusion de deux événements** : colonne `merged_into_id` et procédure de transfert des
+  votes, à explorer avant implémentation ([DEDUPLICATION.md](DEDUPLICATION.md) §3).
+- **Choix / décisions** : tables `choices` et `choice_options` définies, implémentation
+  repoussable (§4).
+
 ### Autres points à trancher
 
 8. Racine d'univers virtuelle, ou véritable ligne `is_root` ? (§2)
-9. Clés primaires : entiers auto-incrémentés ou UUID ?
+9. **Tri par défaut** des enfants d'un nœud et de chaque autre liste
+   ([LISTS.md](LISTS.md) §7). Le composant accepte tous les critères ; il reste à choisir
+   celui que les gens verront sans rien demander.
 10. Un choix peut-il être placé dans l'arbre (`choices.parent_id`) ? (§4)
 11. Colonne-cache pour le niveau 1 / nombre d'enfants, si le calcul à la volée coûte trop
     cher (§3.3).
 12. Un utilisateur peut-il éditer sa propre prédiction, et jusqu'à quand ?
     ([ROLES.md](ROLES.md))
 13. Les axes intérêt/fun donnent-ils droit à des titres ? ([TITLES.md](TITLES.md))
+14. Pseudonyme modifiable, et l'ancien redevient-il disponible ? ([AUTH.md](AUTH.md) §3)
 
 ## 11. Ouvert (🔴)
 

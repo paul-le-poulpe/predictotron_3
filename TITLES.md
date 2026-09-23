@@ -1,5 +1,10 @@
 # predictotron — Titres
 
+> Point d'entrée du projet : [PROJECT.md](PROJECT.md). Décisions et points ouverts :
+> [DECISIONS.md](DECISIONS.md).
+
+**Statut : draft v0.1.**
+
 Les titres sont la récompense de l'activité sur le site. Ils s'obtiennent en
 **accomplissant des choses**, et ne se perdent jamais.
 

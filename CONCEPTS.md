@@ -1,5 +1,10 @@
 # predictotron — Modèle conceptuel
 
+> Point d'entrée du projet : [PROJECT.md](PROJECT.md). Décisions et points ouverts :
+> [DECISIONS.md](DECISIONS.md).
+
+**Statut : draft v0.2.**
+
 Le vocabulaire et les règles du domaine. Ce document ne parle **pas** de base de données
 (voir [DATABASE.md](DATABASE.md)) ni d'interface (voir [PAGES.md](PAGES.md)) : il définit
 ce que sont les objets et comment ils se comportent.
@@ -71,9 +76,12 @@ Un même événement peut être atteint par plusieurs chemins.
   "Les Américains atterrissent sur la Lune"-+
 ```
 
-Un seul événement « L'homme atterrit sur la Lune », deux parents possibles. L'objectif est
-explicitement d'**éviter la duplication d'événements** et de densifier le graphe plutôt que
-de le faire proliférer.
+Un seul événement « L'homme atterrit sur la Lune », deux parents possibles.
+
+**Ce n'est pas une commodité, c'est un mécanisme anti-duplication essentiel.** Sans les
+parents alternatifs, quand A et B mènent tous deux à C, un utilisateur crée C sous A et un
+autre crée C sous B : deux copies de C, chacune avec ses votes et ses enfants. Le graphe
+prolifère au lieu de se densifier. Voir [DEDUPLICATION.md](DEDUPLICATION.md) §2.
 
 La structure est donc un **graphe orienté acyclique (DAG)**, pas un arbre strict, même si
 on l'affiche comme un arbre. Les cycles sont interdits : un événement ne peut pas être son
@@ -196,8 +204,17 @@ Les axes sont indépendants : un utilisateur peut voter sur un, deux ou trois ax
 
 Un vote se retire (retour à « pas de vote »), il ne se met pas à zéro.
 
-> 🔴 **Ouvert** : la liste définitive des axes. On pourra en ajouter ou en retirer ; la
-> structure est prévue pour que ce soit un simple ajout de donnée.
+> 🟡 **Un auteur peut-il voter sur sa propre prédiction ?** Tu as décrit les notes comme
+> « attribuées par d'autres joueurs », ce qui suggère non, mais ça n'a jamais été tranché.
+> Rien dans le schéma ne l'interdit aujourd'hui.
+
+**Ce qui compte n'est pas la liste, c'est le principe** : la notation se fait sur
+**plusieurs axes**, et les axes exacts ne sont pas figés. Probabilité / intérêt / fun sont
+un jeu de départ plausible. L'implémentation doit donc rester générique : `vote_axes` est
+une table de données, aucun axe n'est codé en dur, ajouter ou retirer un axe est une ligne
+insérée ou désactivée.
+
+> 🔴 **Ouvert** : la liste définitive des axes, à revoir plus tard.
 
 ---
 
@@ -234,3 +251,4 @@ l'œuvre, pas dans l'actualité).
 2. 🔴 Liste définitive des axes de vote (§7).
 3. 🔴 Tags libres ou liste fermée (§8).
 4. 🟡 Verrouillage des axes intérêt/fun après résolution (§5).
+5. 🟡 Un auteur peut-il voter sur sa propre prédiction ? (§7)
