@@ -173,7 +173,7 @@ Contraintes (applicatives) :
 - `parent_id != prediction_id` ;
 - `parent_id != predictions.parent_id` de la même ligne (pas de doublon du canonique) ;
 - même `universe_id` pour l'enfant et le parent ;
-- **aucun cycle** : le graphe doit rester un DAG.
+- **aucune contrainte de cycle** : voir §3.2.1.
 
 Tous les parents d'un événement :
 
@@ -182,6 +182,50 @@ SELECT parent_id FROM predictions         WHERE id = ? AND parent_id IS NOT NULL
 UNION
 SELECT parent_id FROM prediction_parents  WHERE prediction_id = ?;
 ```
+
+#### 3.2.1 Cycles : interdits sur le canonique, autorisés sur les alternatifs *(décidé)*
+
+Deux événements peuvent se déclencher mutuellement ([CONCEPTS.md](CONCEPTS.md) §3). La règle
+porte donc sur **un seul des deux graphes** :
+
+| Graphe | Cycles | Vérification à l'écriture |
+|---|---|---|
+| `predictions.parent_id` seul | **interdits** | oui, à chaque création ou changement de parent canonique |
+| `parent_id` + `prediction_parents` | **autorisés** | aucune |
+
+**Contrôle à effectuer quand on affecte `parent_id = P` à l'événement `E`** : remonter la
+chaîne des parents canoniques depuis `P`. Si on rencontre `E`, refuser. La remontée termine
+toujours, puisque le graphe canonique est acyclique *avant* l'écriture.
+
+```sql
+WITH RECURSIVE ancetres(id) AS (
+  SELECT :p
+  UNION ALL
+  SELECT pr.parent_id FROM predictions pr
+  JOIN ancetres a ON pr.id = a.id
+  WHERE pr.parent_id IS NOT NULL
+)
+SELECT 1 FROM ancetres WHERE id = :e;   -- une ligne = refuser
+```
+
+**Aucun contrôle sur `prediction_parents`.** Insérer « B est parent alternatif de A » alors
+que A est le parent canonique de B est **le cas normal** d'un couple mutuel.
+
+**Règle de parcours, à respecter partout.** Toute requête récursive qui suit les liens de
+`prediction_parents` — dans un sens ou dans l'autre — doit soit mémoriser les identifiants
+déjà visités, soit se limiter en profondeur. Sans ça, un cycle la fait boucler indéfiniment.
+Les parcours qui ne suivent que `parent_id` n'en ont pas besoin : ils terminent par
+construction. Concerne notamment :
+
+- la remontée jusqu'au présent pour construire une pile ([PAGES.md](PAGES.md) §1.4) — elle
+  ne suit que le canonique, donc elle est sûre ;
+- « tous les parents possibles de X », « tous les descendants de X », et tout futur calcul
+  d'atteignabilité — ceux-là suivent les alternatifs et **doivent** dédoublonner.
+
+**Validation indépendante du parent.** Un événement peut passer à `is_realized = TRUE` alors
+que son parent canonique est encore `NULL`. Aucune contrainte ne l'interdit, et c'est
+volontaire : l'événement s'est produit par un autre chemin. Dans un couple mutuel, c'est même
+le cas attendu.
 
 ### 3.3 Niveau 1 / frontière du présent
 

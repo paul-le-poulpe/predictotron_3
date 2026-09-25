@@ -83,13 +83,48 @@ parents alternatifs, quand A et B mènent tous deux à C, un utilisateur crée C
 autre crée C sous B : deux copies de C, chacune avec ses votes et ses enfants. Le graphe
 prolifère au lieu de se densifier. Voir [DEDUPLICATION.md](DEDUPLICATION.md) §2.
 
-La structure est donc un **graphe orienté acyclique (DAG)**, pas un arbre strict, même si
-on l'affiche comme un arbre. Les cycles sont interdits : un événement ne peut pas être son
-propre ancêtre.
-
 > 🔴 **Ouvert** : aujourd'hui les parents alternatifs sont en **OU** (l'un d'eux suffit).
 > Faut-il un jour exprimer un **ET** (« A et B doivent tous deux s'être produits ») ?
 > Non décidé.
+
+### Deux graphes, une seule règle d'acyclicité *(décidé)*
+
+Deux événements peuvent **se déclencher mutuellement**. « Une pénurie d'énergie provoque une
+émeute » et « une émeute provoque une pénurie d'énergie » sont tous les deux vrais, et il est
+naturel que chacun soit parent de l'autre.
+
+La règle :
+
+| Graphe | Composé de | Cycles |
+|---|---|---|
+| **Graphe canonique** | uniquement les liens de parent canonique | **interdits** |
+| **Graphe complet** | canonique + parents alternatifs | **autorisés** |
+
+Donc : si A est le parent **canonique** de B, alors B ne peut pas être le parent canonique de
+A — mais il peut en être un parent **alternatif**. C'est ainsi qu'un couple mutuel
+s'exprime : un sens est canonique, l'autre est alternatif.
+
+### Pourquoi les cycles du graphe complet ne cassent rien
+
+Le graphe canonique est acyclique **et** enraciné : en remontant de parent canonique en
+parent canonique, on atteint toujours le niveau 1 en un nombre fini d'étapes. Donc **tout
+événement conserve au moins un chemin bien fondé depuis le présent**, quoi qu'on ajoute en
+parents alternatifs. Ceux-ci n'ajoutent que des routes supplémentaires ; ils n'en retirent
+aucune.
+
+C'est cette propriété qui rend les cycles inoffensifs. Trois conséquences pratiques :
+
+1. **Tout parcours qui suit les parents alternatifs doit mémoriser les événements déjà
+   visités**, ou se limiter en profondeur. Sans ça, un cycle fait tourner le parcours
+   indéfiniment. Les parcours qui ne suivent que le parent canonique n'ont pas besoin de
+   cette précaution : ils terminent par construction.
+2. **Un événement peut être validé alors que son parent canonique ne l'est pas.** Dans un
+   couple mutuel, celui qui se produit d'abord est réalisé pendant que l'autre ne l'est pas.
+   C'est le cas normal, pas une anomalie : l'événement s'est produit par un autre chemin.
+3. **La frontière du présent reste correcte.** Un événement est au niveau 1 dès qu'**un** de
+   ses parents est réalisé (§4). Si B se réalise et que B est parent alternatif de A, alors A
+   devient imminent — ce qui est exactement ce que « B peut déclencher A » veut dire, même si
+   A est par ailleurs le parent canonique de B.
 
 ---
 

@@ -25,7 +25,8 @@ Si tu arrives sur ce projet sans contexte, lis dans cet ordre :
 2. **Ne rien inventer.** Poser la question plutôt que de combler un trou par une hypothèse.
    Quand une hypothèse est nécessaire pour avancer, l'écrire explicitement et la marquer.
 3. Un point marqué 🔴 « à définir par Paul » **n'est pas à proposer** — en particulier la
-   navigation de la page principale ([PAGES.md](PAGES.md) §1).
+   vue arborescence de la page principale ([PAGES.md](PAGES.md) points ouverts) et le
+   contenu du journal du présent ([PAGES.md](PAGES.md) §1.5).
 4. Rester simple. Une colonne, une table ou un mécanisme qui ne répond à aucun besoin
    exprimé ne doit pas être ajouté « au cas où ».
 5. Quand un choix a une conséquence que Paul n'a pas envisagée, la dire en une ou deux
@@ -68,9 +69,9 @@ se réalisent.
 | [LISTS.md](LISTS.md) | Composant de liste unifié, critères de tri, recherche plein texte | v0.1 |
 | [DEDUPLICATION.md](DEDUPLICATION.md) | Éviter les doublons d'événements ; fusion (hors V1) | v0.3 |
 | [TITLES.md](TITLES.md) | Système de titres | squelette — contenu à définir par Paul |
-| [PAGES.md](PAGES.md) | Inventaire des écrans. **Page principale non définie exprès** | v0.2 |
+| [PAGES.md](PAGES.md) | Inventaire des écrans. **Page principale : vue pile de journaux définie, vue arborescence non définie exprès** | v0.3 |
 | — | Modération | pas commencé |
-| — | Aspect visuel, design | plan précis chez Paul, session dédiée. On démarre par une maquette sans style ([PAGES.md](PAGES.md) §1b) |
+| — | Aspect visuel, design | **Page principale : direction donnée, presse écrite** ([PAGES.md](PAGES.md) §1.6). Reste du site : plan précis chez Paul, session dédiée ; maquette sans style en attendant ([PAGES.md](PAGES.md) §1b) |
 
 ---
 
@@ -139,7 +140,9 @@ Dans cet ordre.
 1. **Tri par défaut des enfants d'un événement** ([LISTS.md](LISTS.md) §7) — c'est le tri
    que verront presque tous les utilisateurs.
 2. **Les familles de titres, leurs niveaux et leurs seuils** ([TITLES.md](TITLES.md) §3).
-3. **La page principale** ([PAGES.md](PAGES.md) §1) — 🔴 Paul la définit, personne d'autre.
+3. **La vue arborescence de la page principale** et **le contenu du journal du présent**
+   ([PAGES.md](PAGES.md) §1.5 et points ouverts) — 🔴 Paul les définit, personne d'autre.
+   La vue pile de journaux, elle, est définie ([PAGES.md](PAGES.md) §1.1-1.6).
 4. Le reste des points 🟡 est listé dans [DECISIONS.md](DECISIONS.md).
 
 ### 5.3 Ordre de construction proposé

@@ -21,7 +21,10 @@ discutable, le dire à Paul et attendre sa réponse.
 | 3 | **Les enfants ne sont jamais stockés.** Seul le lien vers le parent existe ; les enfants se trouvent par recherche inverse | [DATABASE.md](DATABASE.md) §3 |
 | 4 | Parent canonique dans `predictions.parent_id`, parents alternatifs **supplémentaires** dans `prediction_parents`. Le parent canonique n'est **pas** dupliqué dans la table de liaison | [DATABASE.md](DATABASE.md) §3.2 |
 | 5 | Les **parents alternatifs sont essentiels**, pas un confort : sans eux, un événement atteignable par deux chemins est créé deux fois | [DEDUPLICATION.md](DEDUPLICATION.md) §2 |
-| 6 | La structure est un **graphe orienté acyclique**, pas un arbre strict. Aucun cycle | [CONCEPTS.md](CONCEPTS.md) §3 |
+| 6 | **Le graphe canonique (`parent_id` seul) est acyclique. Le graphe complet, avec les parents alternatifs, peut avoir des cycles** — deux événements peuvent se déclencher mutuellement | [CONCEPTS.md](CONCEPTS.md) §3, [DATABASE.md](DATABASE.md) §3.2.1 |
+| 6b | Si A est parent **canonique** de B, B ne peut être que parent **alternatif** de A | [DATABASE.md](DATABASE.md) §3.2.1 |
+| 6c | Tout parcours suivant les parents alternatifs **doit dédoublonner ou borner sa profondeur**. Les parcours purement canoniques terminent par construction | [DATABASE.md](DATABASE.md) §3.2.1 |
+| 6d | Un événement peut être validé alors que son parent canonique ne l'est pas : il s'est produit par un autre chemin | [DATABASE.md](DATABASE.md) §3.2.1 |
 | 7 | Le **présent est une frontière mobile**. Un événement est « niveau 1 » s'il n'a pas de parent, ou si son parent est réalisé | [CONCEPTS.md](CONCEPTS.md) §4 |
 | 8 | **Quand un événement se réalise, ses enfants continuent de pointer dessus.** Rien n'est déplacé, le niveau 1 est déduit | [DATABASE.md](DATABASE.md) §3.3 |
 | 9 | L'univers est une colonne de l'événement. Un lien ne traverse jamais deux univers. Seul « le futur » est actif au lancement | [CONCEPTS.md](CONCEPTS.md) §9 |
@@ -111,8 +114,32 @@ discutable, le dire à Paul et attendre sa réponse.
 
 | # | Décision | Détail |
 |---|---|---|
-| 46 | **On commence par une maquette la plus simple possible, sans style.** Elle sert à rendre la structure visible | [PAGES.md](PAGES.md) §1b |
-| 47 | Paul a un plan précis pour le design et le donnera dans une session dédiée. **Ne proposer aucune direction visuelle** | [PAGES.md](PAGES.md) §1b |
+| 46 | **On commence par une maquette la plus simple possible, sans style.** Elle sert à rendre la structure visible. **Ne vaut plus pour la page principale**, dont la direction visuelle est donnée (#53) | [PAGES.md](PAGES.md) §1b |
+| 47 | Pour le reste du site, Paul a un plan précis et le donnera dans une session dédiée. **Ne proposer aucune direction visuelle** | [PAGES.md](PAGES.md) §1b |
+
+### Page principale — vue pile de journaux
+
+| # | Décision | Détail |
+|---|---|---|
+| 48 | **Un événement s'affiche comme une page de journal.** Un journal = un événement ; les colonnes sont un habillage du texte, pas plusieurs articles | [PAGES.md](PAGES.md) §1.1 |
+| 49 | Un clic sur un futur possible **empile son journal par-dessus, décalé vers le bas de la hauteur du bandeau de titre.** La suite des titres qui dépassent **est le chemin parcouru depuis le présent** | [PAGES.md](PAGES.md) §1.1 |
+| 50 | **Un clic sur le titre d'un journal antérieur retire tous les journaux empilés par-dessus lui** | [PAGES.md](PAGES.md) §1.1 |
+| 51 | **La pile n'est ni repliée ni limitée en profondeur.** La page s'allonge et on scrolle | [PAGES.md](PAGES.md) §1.1 |
+| 52 | Deux façons de construire la pile : en navigation depuis le présent, **les journaux réellement traversés** (même via un parent non canonique) ; en arrivée directe depuis une autre page, **la chaîne des parents canoniques** | [PAGES.md](PAGES.md) §1.4 |
+| 53 | Style **presse écrite**, d'après la référence et le prototype fournis par Paul. Journaux sur les deux tiers gauche | [PAGES.md](PAGES.md) §1.6 |
+| 54 | La colonne de droite porte **des filtres** — précisé par #66 | [PAGES.md](PAGES.md) §1.3 |
+| 55 | La chaîne des parents canoniques **s'arrête au niveau 1**. On ne remonte pas dans les événements réalisés : consulter le passé n'est pas conçu | [PAGES.md](PAGES.md) §1.4 |
+| 56 | Le **bouton « retour » du navigateur ramène à la page précédente**, il ne dépile pas. On dépile uniquement en cliquant sur le titre d'un journal antérieur | [PAGES.md](PAGES.md) §1.1 |
+| 57 | Clic sur un futur possible affiché par un journal antérieur : **c'est la parenté qui tranche.** Enfant du journal courant → on empile simplement ; sinon → on dépile jusqu'au journal dont il est l'enfant, puis on empile | [PAGES.md](PAGES.md) §1.1 |
+| 58 | **L'URL porte le chemin**, sous forme de suite d'identifiants entiers. Le dernier est l'événement affiché ; empiler ajoute un identifiant, dépiler tronque la liste | [PAGES.md](PAGES.md) §1.4 |
+| 59 | L'URL est réécrite par **`history.replaceState`** : pas de rechargement, et **aucune entrée ajoutée à l'historique**. C'est ce qui rend le bouton « retour » conforme à #56 | [PAGES.md](PAGES.md) §1.4 |
+| 60 | **La vue affiche le chemin tel qu'il est, sans le contrôler.** Si le chemin repasse sur un événement déjà dans la pile, son journal est **empilé une seconde fois sans traitement particulier** — chaque journal est rendu indépendamment. La construction du graphe n'est pas l'affaire de cette vue | [PAGES.md](PAGES.md) §1.1 |
+| 61 | **Les futurs possibles sont dans le journal**, pas dans la colonne de droite. « Pour commencer » | [PAGES.md](PAGES.md) §1.2 |
+| 62 | Un **chemin invalide dans l'URL retombe sur la chaîne des parents canoniques**. Pas d'erreur affichée | [PAGES.md](PAGES.md) §1.4 |
+| 63 | **Aucune limite de longueur de pile.** Aucune raison identifiée d'en poser une ; à rediscuter plus tard si besoin | [PAGES.md](PAGES.md) §1.1 |
+| 64 | **Tri par défaut des enfants d'un événement : `score:intérêt` décroissant.** Le critère par défaut doit rester configurable — c'est un `axis_id` différent dans la même requête (#37) | [LISTS.md](LISTS.md) §7 |
+| 65 | Un journal affiche **un nombre fixe de futurs possibles, puis un bouton « voir plus »** qui charge la suite par curseur (#39) | [PAGES.md](PAGES.md) §1.2 |
+| 66 | La colonne de droite porte **des filtres par tags et le choix du critère de tri**. Rien d'autre pour l'instant | [PAGES.md](PAGES.md) §1.3 |
 
 ---
 
@@ -120,7 +147,8 @@ discutable, le dire à Paul et attendre sa réponse.
 
 | Sujet | Où |
 |---|---|
-| **Toute la navigation de la page principale** (vue arborescence, vue boîtes empilées, autres). **Ne pas proposer.** | [PAGES.md](PAGES.md) §1 |
+| **Toute la vue arborescence**, et le passage d'une vue à l'autre. **Ne pas proposer.** | [PAGES.md](PAGES.md) points ouverts, « Vue arborescence » |
+| **Contenu du journal du bas de la pile** (le présent). Piste évoquée : des catégories à choisir | [PAGES.md](PAGES.md) §1.5 |
 | Liste définitive des axes de vote | [CONCEPTS.md](CONCEPTS.md) §7 |
 | Familles de titres, niveaux, seuils, noms | [TITLES.md](TITLES.md) §3 |
 | Tags libres ou liste fermée gérée par les administrateurs | [CONCEPTS.md](CONCEPTS.md) §8 |
@@ -135,7 +163,7 @@ discutable, le dire à Paul et attendre sa réponse.
 
 | Sujet | Où |
 |---|---|
-| **Tri par défaut** des enfants d'un événement, et de chaque autre liste | [LISTS.md](LISTS.md) §7 |
+| **Tri par défaut des autres listes** que les enfants d'un événement (celui-ci est tranché, #64) | [LISTS.md](LISTS.md) §7 |
 | Valider le choix de Better Auth | [AUTH.md](AUTH.md) §6 |
 | Fournisseur d'envoi d'e-mails (confirmation d'adresse, réinitialisation) | [AUTH.md](AUTH.md) §6 |
 
@@ -159,6 +187,8 @@ discutable, le dire à Paul et attendre sa réponse.
 | Signalement d'un doublon par un utilisateur | [DEDUPLICATION.md](DEDUPLICATION.md) §4 |
 | Un choix peut-il être placé dans l'arbre ? | [DATABASE.md](DATABASE.md) §4 |
 | Colonne-cache pour le niveau 1 / le nombre d'enfants | [DATABASE.md](DATABASE.md) §10 |
+| La page « détail d'un événement » survit-elle à la vue pile ? | [PAGES.md](PAGES.md) §3 |
+| **Reporté par Paul, à reprendre plus tard :** rotation des journaux recouverts, hauteur du décalage | [PAGES.md](PAGES.md) points ouverts |
 
 ---
 

@@ -14,7 +14,7 @@ composant** pour tous ces endroits, plutôt qu'une logique de tri réécrite à 
 
 | Endroit | Ensemble de départ | Tri qui a du sens par défaut |
 |---|---|---|
-| Enfants d'un post | `parent_id = X` | 🟡 |
+| Enfants d'un post | `parent_id = X` | **`score:intérêt` décroissant** *(décidé)* |
 | Résultats de recherche | tout l'univers, filtré par texte | similarité |
 | Suggestion de posts similaires à la création | tout l'univers, filtré par le titre en cours de saisie | similarité |
 | Page d'activité : mes posts | `author_id = moi` | date décroissante |
@@ -149,10 +149,16 @@ provoquent des doublons ou des trous entre deux pages.
 
 ## 7. Points à trancher
 
-1. 🟡 **Tri par défaut des enfants d'un post.** C'est le plus important : c'est le tri que
-   presque tous les utilisateurs verront. Date la plus récente ? Score de probabilité ?
-   Nombre de votes ?
-2. 🟡 Tri par défaut de chacun des autres endroits (§1).
+1. *(décidé)* **Tri par défaut des enfants d'un post : `score:intérêt` décroissant.**
+   L'utilisateur peut changer de critère depuis la colonne de droite de la page principale
+   ([PAGES.md](PAGES.md) §1.3). Le critère par défaut doit rester **configurable**, ce qui
+   ne coûte rien : c'est un `axis_id` différent dans la même requête (§3).
+   - Conséquence à surveiller : un enfant qui vient d'être créé n'a aucun vote, donc un
+     score de 0, donc il se place en bas. Aucun mécanisme n'expose aujourd'hui les enfants
+     récents. 🟡 À traiter le jour où ça se voit.
+   - 🟡 Un **mix de plusieurs axes** est souhaité « peut-être, par la suite ». C'est le tri
+     par poids combiné de §4, hors V1 : une formule n'est pas indexable.
+2. 🟡 Tri par défaut de chacun des **autres** endroits (§1).
 3. 🟡 Un compteur d'enfants sur `predictions`, si le tri par nombre d'enfants est retenu.
 4. 🟡 Titre seul ou titre + description dans l'index de recherche.
 5. 🟡 La page de recherche elle-même n'est pas définie ([PAGES.md](PAGES.md)) : filtres

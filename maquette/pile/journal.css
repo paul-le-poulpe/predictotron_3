@@ -1,0 +1,295 @@
+/* Maquette de la vue pile de journaux. Style presse écrite, d'après
+   https://codepen.io/silkine/pen/QWBxVX et le prototype de Paul. */
+
+:root {
+  --papier: #f9f7f1;
+  --encre: #2f2f2f;
+  --fond: #303030;
+  --trait: #2f2f2f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--papier);
+  font-family: 'Droid Serif', Georgia, serif;
+  font-size: 14px;
+}
+
+/* ---------------------------------------------------------------- disposition */
+
+.page {
+  display: grid;
+  grid-template-columns: 2fr 1fr;   /* deux tiers / un tiers (décision 53) */
+  gap: 24px;
+  padding: 24px;
+  align-items: start;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* Les journaux sont positionnés en absolu : le décalage de chacun est calculé à
+   partir de la hauteur réelle du bandeau du journal précédent. */
+.empilement {
+  position: relative;
+  min-height: 400px;
+}
+
+/* ------------------------------------------------------------------- journaux */
+
+.journal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--papier);
+  color: var(--encre);
+  box-shadow: 0 3px 24px rgba(0, 0, 0, .55);
+  transition: top .3s ease-out, transform .5s ease-out;
+  transform-origin: 50% 0;
+}
+
+.journal .bandeau {
+  padding: 22px 28px 0;
+  text-align: center;
+}
+
+/* Seul le bandeau d'un journal recouvert est cliquable : c'est par lui qu'on dépile. */
+.journal.recouvert .bandeau { cursor: pointer; }
+.journal.recouvert .bandeau:hover .titre { text-decoration: underline; }
+
+.journal .titre {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 900;
+  font-size: 52px;
+  line-height: .96;
+  text-transform: uppercase;
+}
+
+.journal .sous-bandeau {
+  margin-top: 16px;
+  padding: 10px 0;
+  border-top: 2px solid var(--trait);
+  border-bottom: 2px solid var(--trait);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: .06em;
+}
+
+.journal .corps { padding: 26px 32px 36px; }
+
+.journal .surtitre {
+  text-align: center;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-size: 28px;
+  margin: 0;
+}
+
+.journal .signature {
+  text-align: center;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: 12px 0;
+}
+.journal .signature:before,
+.journal .signature:after {
+  content: '';
+  display: block;
+  width: 100px;
+  margin: 0 auto;
+}
+.journal .signature:before { border-top: 1px solid var(--trait); height: 7px; }
+.journal .signature:after { border-bottom: 1px solid var(--trait); height: 10px; }
+
+.journal .texte {
+  text-align: justify;
+  line-height: 20px;
+}
+/* Les colonnes ne servent qu'à partir d'un texte assez long : une description de deux
+   lignes coupée en deux colonnes ne ressemble à rien. */
+.journal .texte.deux-colonnes {
+  columns: 2;
+  column-gap: 32px;
+  column-rule: 1px solid var(--trait);
+}
+.journal .texte p { margin: 0 0 16px; }
+
+/* ------------------------------------------------------------------- sections */
+
+.section {
+  margin-top: 28px;
+  border-top: 1px solid var(--trait);
+  padding-top: 14px;
+}
+
+.section > h2 {
+  margin: 0 0 12px;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+/* --------------------------------------------------------------- notation */
+
+.axes { display: flex; gap: 28px; flex-wrap: wrap; }
+
+.axe { flex: 1 1 180px; }
+.axe .nom {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: .06em;
+}
+.axe .question { font-style: italic; font-size: 12px; margin: 2px 0 8px; }
+
+.axe button {
+  font-family: inherit;
+  font-size: 13px;
+  background: transparent;
+  border: 1px solid var(--trait);
+  color: var(--encre);
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.axe button:hover { background: var(--encre); color: var(--papier); }
+.axe button[aria-pressed='true'] { background: var(--encre); color: var(--papier); }
+.axe .total { font-size: 12px; margin-left: 8px; }
+
+/* Graphique pour / contre. Calculé depuis score et nombre de votes, sans
+   stockage supplémentaire (PAGES.md §1.2). */
+.jauge {
+  margin-top: 10px;
+  height: 12px;
+  display: flex;
+  border: 1px solid var(--trait);
+}
+.jauge .pour { background: var(--encre); }
+.jauge .contre {
+  background: repeating-linear-gradient(
+    45deg, transparent, transparent 3px, var(--encre) 3px, var(--encre) 4px
+  );
+}
+.jauge-legende {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+/* ------------------------------------------------------- autres chemins */
+
+/* Une ligne de texte par parent, pas une grille de boîtes (PAGES.md §1.2). */
+.chemins { margin: 0; padding: 0; list-style: none; }
+.chemins li {
+  padding: 4px 0;
+  border-bottom: 1px dotted var(--trait);
+  font-style: italic;
+}
+.chemins li:last-child { border-bottom: none; }
+
+/* ------------------------------------------------------- futurs possibles */
+
+.futurs { margin: 0; padding: 0; list-style: none; }
+
+.futur {
+  border-bottom: 1px solid var(--trait);
+  padding: 10px 0;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+}
+.futur:hover .futur-titre { text-decoration: underline; }
+
+.futur-titre {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.15;
+}
+.futur-infos { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+.futur-tags { font-size: 11px; font-style: italic; grid-column: 1 / -1; margin-top: 2px; }
+
+.voir-plus {
+  margin-top: 14px;
+  font-family: inherit;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  background: transparent;
+  border: 1px solid var(--trait);
+  color: var(--encre);
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.voir-plus:hover { background: var(--encre); color: var(--papier); }
+
+.vide { font-style: italic; }
+
+/* ------------------------------------------------- journal du présent (🔴) */
+
+.non-defini {
+  border: 3px double var(--trait);
+  padding: 14px 18px;
+  font-style: italic;
+}
+
+/* --------------------------------------------------------- colonne de droite */
+
+.colonne-droite {
+  position: sticky;
+  top: 24px;
+  background: #262626;
+  border: 1px solid #4a4a4a;
+  padding: 18px;
+}
+
+.colonne-droite h2 {
+  margin: 0 0 10px;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.colonne-droite .bloc + .bloc { margin-top: 24px; }
+
+.colonne-droite label { display: block; padding: 3px 0; cursor: pointer; }
+.colonne-droite select {
+  width: 100%;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px;
+  background: var(--papier);
+  color: var(--encre);
+  border: 1px solid #4a4a4a;
+}
+
+.colonne-droite .note {
+  margin-top: 24px;
+  padding-top: 12px;
+  border-top: 1px solid #4a4a4a;
+  font-size: 11px;
+  line-height: 16px;
+  color: #a8a8a8;
+}
+
+.fil { font-size: 11px; color: #a8a8a8; margin-top: 10px; word-break: break-all; }
+
+/* ---------------------------------------------------------------- petit écran */
+
+@media (max-width: 1100px) {
+  .page { grid-template-columns: 1fr; }
+  .colonne-droite { position: static; }
+  .journal .titre { font-size: 38px; }
+  .journal .texte { columns: 1; }
+}
